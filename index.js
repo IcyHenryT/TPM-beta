@@ -393,7 +393,7 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
     await sleep(200)
     bot.currentWindow.requiresConfirmation = false;
     bot.clickWindow(33, 0, 0)
-  } else if (getWindowName(bot.currentWindow)?.includes('Create BIN Auction')){
+  } else if (!getWindowName(bot.currentWindow)?.includes('Create BIN Auction')){
     logmc("§6[§bTPM§6] §cItem probably already in slot, please remove it :) Aborting relist process for this item ):")
     if (bot.currentWindow) bot.closeWindow(bot.currentWindow);
     await sleep(250)
