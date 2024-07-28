@@ -135,7 +135,7 @@ function nicerFinders(finder){
         case "CraftCost":
             return "Craft";
         case "SNIPER":
-            return 'SNIPE';
+            return 'Snipe';
         case "STONKS":
             return 'Stonks';
         case "FLIPPER":
