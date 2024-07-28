@@ -315,7 +315,7 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
   debug("Starting relist process for item with ahid:", idToRelist, "and target:", priceToRelist, 'bot state:', bot.state);
   bot.chat(`/viewauction ${idToRelist}`);
   await once(bot, 'windowOpen');
-  if (bot.currentWindow?.title?.includes("BIN Auction View")) {
+  if (getWindowName(bot.currentWindow).includes("BIN Auction View")) {
     await sleep(500)
     debug("BIN Auction View opened")
     itemuuid = nbt.simplify(bot.currentWindow?.slots[13]?.nbt)?.ExtraAttributes?.uuid
@@ -323,7 +323,7 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
     bot.clickWindow(31, 0, 0)
     debug("claim click")
     await sleep(500)
-    if (cdClaim > 0) {
+    if (cdClaim > 0 && bot.currentWindow) {
       bot.currentWindow.requiresConfirmation = false;
       bot.clickWindow(31, 0, 0)
       debug("claim click 2 (after first cooldown)")
@@ -339,7 +339,7 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
         return;
       }
     }
-    if (fullInv) {
+    if (fullInv && bot.currentWindow) {
       bot.currentWindow.requiresConfirmation = false;
       bot.clickWindow(31, 0, 0)
       debug("claim click 2 (after full inv)")
@@ -582,7 +582,7 @@ async function start() {
   setInterval(async () => {
     if (bot.state === 'buying' && Date.now() - lastLeftBuying > 5000) {
       error("Bot state issue detected, resetting state and hopefully fixing queue lock issue")
-      if (bot.currenWindow) bot.closeWindow(bot.currentWindow);
+      if (bot.currentWindow) bot.closeWindow(bot.currentWindow);
       await sleep(200)
       bot.state = null;
     }
@@ -958,7 +958,7 @@ async function start() {
         lastAction = currentTime;
         logmc(`§6[§bTPM§6] §8Opening ${itemName}`);
         closedGui = false;
-        bedFailed = true;
+        bedFailed = false;
         currentOpen = data.id;
         lastOpenedTargets.length = 0;
         lastOpenedTargets.push(target);
@@ -1012,6 +1012,7 @@ async function start() {
         lastLeftBuying = Date.now();
         bot.state = 'buying';
         packets.sendMessage(`/viewauction ${auctionID}`);
+        bedFaiiled = false;
         itemName = data.auction.itemName;
         //console.log(`Opening ${itemName} at ${Date.now()}`);
         logmc(`§6[§bTPM§6] §8Opening ${itemName}`);
@@ -1041,7 +1042,7 @@ async function start() {
       };
       if (currentTime < ending) {
         bed = '[BED]';
-        webhookPricing[noColorCodes(itemName)].replace(/!|-us|\.|\b(?:[1-9]|[1-5][0-9]|6[0-4])x\b/g, "").bed = bed;
+        webhookPricing[noColorCodes(itemName).replace(/!|-us|\.|\b(?:[1-9]|[1-5][0-9]|6[0-4])x\b/g, "")].bed = bed;
         //console.log(`bed found, waiting ${ending - Date.now() - waittime} ending: ${ending}`);
         setTimeout(async () => {
           for (i = 0; i < 5; i++) {
