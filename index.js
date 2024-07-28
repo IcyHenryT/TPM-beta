@@ -13,7 +13,7 @@ const utils = require(`./utils.js`);
 const { randomUUID } = require('crypto');
 const axios = require('axios');
 const stateManger = require(`./state.js`);
-const { noColorCodes, onlyNumbers, normalizeDate, IHATETAXES, formatNumber, sleep, getWindowName, getPurse, relistCheck, addCommasToNumber } = require('./utils.js');
+const { noColorCodes, nicerFinders, normalizeDate, IHATETAXES, formatNumber, sleep, getWindowName, getPurse, relistCheck, addCommasToNumber } = require('./utils.js');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
 const { getPackets, makePackets } = require('./packetStuff.js');
 const { silly, debug, error, info, logmc } = require('./logger.js');
@@ -808,7 +808,7 @@ async function start() {
       const purse = utils.formatNumber(await getPurse(bot) - parseInt(String(price).replace(/,/g, ''), 10));
       if (webhook) {
         const embed = new MessageBuilder()
-          .setFooter(`The "Perfect" Macro - Found by ${webhookPricing[item].finder} - Purse: ${purse} `, 'https://media.discordapp.net/attachments/1223361756383154347/1263302280623427604/capybara-square-1.png?ex=6699bd6e&is=66986bee&hm=d18d0749db4fc3199c20ff973c25ac7fd3ecf5263b972cc0bafea38788cef9f3&=&format=webp&quality=lossless&width=437&height=437')
+          .setFooter(`TPM - Found by ${nicerFinders(webhookPricing[item].finder)} - Purse: ${purse} `, 'https://media.discordapp.net/attachments/1223361756383154347/1263302280623427604/capybara-square-1.png?ex=6699bd6e&is=66986bee&hm=d18d0749db4fc3199c20ff973c25ac7fd3ecf5263b972cc0bafea38788cef9f3&=&format=webp&quality=lossless&width=437&height=437')
           .setTitle('Item purchased')
           .addField('', `Bought \`${utils.noColorCodes(match1[1])}\` for \`${price} coins\` (\`${utils.formatNumber(profit)}\` profit) [click](${auctionUrl}) ${itemBed}`)
           .setThumbnail(`https://mc-heads.net/head/${config.uuid}.png`)

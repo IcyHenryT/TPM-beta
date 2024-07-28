@@ -5,7 +5,7 @@ const axios = require('axios');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
 let {config} = require('./config.js');
 let webhook;
-let id;
+let id = config.discordID;
 const ws = new EventEmitter();
 let connected = false;
 const WebSocket = require('ws');

@@ -122,5 +122,27 @@ function addCommasToNumber(number) {
     return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+function nicerFinders(finder){
+    switch(finder){
+        case "USER":
+            return "User";
+        case "SNIPER_MEDIAN":
+            return 'Median Sniper';
+        case "TFM":
+            return "TFM";
+        case "AI":
+            return 'AI';
+        case "CraftCost":
+            return "Craft";
+        case "SNIPER":
+            return 'SNIPE';
+        case "STONKS":
+            return 'Stonks';
+        case "FLIPPER":
+            return 'Flip'
+    }
+    return finder;
+}
+
 const sleep = ms => new Promise((resolve) => setTimeout(resolve, ms))
-module.exports = { noColorCodes, onlyNumbers, normalizeDate, IHATETAXES, formatNumber, sleep, getWindowName, saveData, getPurse, relistCheck, addCommasToNumber }
+module.exports = { noColorCodes, onlyNumbers, normalizeDate, IHATETAXES, formatNumber, sleep, getWindowName, saveData, getPurse, relistCheck, addCommasToNumber, nicerFinders }
