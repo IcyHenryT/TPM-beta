@@ -699,6 +699,9 @@ async function start() {
       case 'Putting coins in escrow...':
         logmc(`§6[§bTPM§6] §3Auction bought in ${Date.now() - firstGui}ms`);
         bot.state = null;
+        if (bot.currentWindow && !closedGui) bot.closeWindow(bot.currentWindow);
+        closedGui = true;
+        break;
         break;
       case "This auction wasn't found!":
         bot.state = null;
@@ -706,7 +709,7 @@ async function start() {
       case "The auctioneer has closed this auction!":
       case "You don't have enough coins to afford this bid!":
         bot.state = null;
-        if (getWindowName(bot.currentWindow) && !closedGui) bot.closeWindow(bot.currentWindow);
+        if (bot.currentWindow && !closedGui) bot.closeWindow(bot.currentWindow);
         closedGui = true;
         break;
       case '/limbo for more information.':
@@ -1013,6 +1016,7 @@ async function start() {
         bot.state = 'buying';
         packets.sendMessage(`/viewauction ${auctionID}`);
         bedFaiiled = false;
+        closedGui = false;
         itemName = data.auction.itemName;
         //console.log(`Opening ${itemName} at ${Date.now()}`);
         logmc(`§6[§bTPM§6] §8Opening ${itemName}`);
