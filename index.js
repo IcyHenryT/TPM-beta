@@ -758,7 +758,7 @@ async function start() {
       let lastPurchasedTarget;
       let lastPurchasedFinder;
       if (lastOpenedAhids.length > 0 && config.relist) {
-        if (!finderQueue.toString().toLowerCase().includes("user")) {
+        if (!finderQueue.includes("user")) {
           lastPurchasedAhid = lastOpenedAhids[lastOpenedAhids.length - 1];
           purchasedIds.push(lastPurchasedAhid);
           lastPurchasedTarget = lastOpenedTargets[lastOpenedTargets.length - 1];
