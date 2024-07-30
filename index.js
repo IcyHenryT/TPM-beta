@@ -342,7 +342,7 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
         //readd idToRelist and PriceToRelist to the front of the arrays
         purchasedAhids.unshift(idToRelist);
         purchasedPrices.unshift(priceToRelist);
-        stateManger.add({ id: purchasedAhids, targets: purchasedPrices }, 4, 'listing');
+        stateManger.add({ id: purchasedAhids, targets: purchasedPrices }, Infinity, 'listing');
         bot.state = null;
         cdClaim = 0;
         return;
@@ -622,13 +622,14 @@ async function start() {
     if (bot.state !== old) debug(`Bot state updated: ${bot.state}`);
     old = bot.state;
     if (current && bot.state === null && Date.now() - lastAction > delay) {
-      bot.state = current.state;
       const command = current.command;
       if (command === 'claim') {
+        bot.state = current.state;
         bot.state = 'claiming';
         await claimBought();
         bot.state = null;
       } else if (command === 'sold') {
+        bot.state = current.state;
         bot.state = 'claiming';
         await claimSold();
         bot.state = null;
@@ -643,10 +644,11 @@ async function start() {
             await sleep(500);
             relistHandler(command.id, command.targets);
           } else {
-            stateManger.add(command, 4, 'listing');
+            stateManger.add(command, Infinity, 'listing');
           }
         }
       } else {
+        bot.state = current.state;
         let ahid = webhookPricing[command].id
         let target = webhookPricing[command].target
         let finder = webhookPricing[command].finder
@@ -803,13 +805,13 @@ async function start() {
                     relistHandler(lastPurchasedAhid, lastPurchasedTarget);
                   } else {
                     debug(`relist check didn't work`);
-                    stateManger.add({ id: lastPurchasedAhid, targets: lastPurchasedTarget }, 4, 'listing');
+                    stateManger.add({ id: lastPurchasedAhid, targets: lastPurchasedTarget }, Infinity, 'listing');
                     bot.state = null;
                   }
                 }
               } else {
                 debug(`bot state check didn't work`);
-                stateManger.add({ id: lastPurchasedAhid, targets: lastPurchasedTarget }, 4, 'listing');
+                stateManger.add({ id: lastPurchasedAhid, targets: lastPurchasedTarget }, Infinity, 'listing');
                 bot.state = null;
               }
             }, 10000);
