@@ -1,5 +1,5 @@
 const EventEmitter = require('events');
-const { logmc } = require("./logger.js");
+const { logmc, debug, error } = require("./logger.js");
 const { sleep, formatNumber, noColorCodes } = require("./utils.js");
 const axios = require('axios');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
@@ -25,6 +25,7 @@ async function startWS(sid) {
         id = config.discordID;
     }
     const link = `${config.usInstance ? 'ws://sky-us.' : 'wss://sky.'}coflnet.com/modsocket?version=${config.useBafSocket ? '1.5.0-af' : '1.5.5-Alpha'}&player=${config.username}&SId=${sid}`;
+    debug(`Connecting to ${link}`)
     websocket = new WebSocket(link);
     websocket.on('open', () => {
         logmc('§aConnected to WebSocket server');
@@ -59,7 +60,7 @@ async function startWS(sid) {
     });
 
     websocket.on('error', (err) => {
-        console.error('WebSocket error:', err.message);
+        error('WebSocket error:', err.message);
         websocket.close();
     });
 }

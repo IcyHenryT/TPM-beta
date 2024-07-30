@@ -78,7 +78,7 @@ usInstance = config.usInstance;
 percentOfTarget = config.percentOfTarget;
 relist = config.relist;
 ownAuctions = config.ownAuctions;
-badFinders = config.doNotListFinders ? config.doNotListFinders : ['user'];
+badFinders = config.doNotListFinders ? config.doNotListFinders : ['USER'];
 
 if (webhook) {
   webhook = new Webhook(webhook);
@@ -180,7 +180,7 @@ async function getReady() {
                 bot.chat('/ah')
                 await once(bot, 'windowOpen');
                 //console.log(bot.currentWindow.title,bot.currentWindow.slots[15].nbt.value.display.value.Name.value)
-                if ((bot.currentWindow.title.includes("Co-op Auction House") || bot.currentWindow.title.includes("Auction House")) && (bot.currentWindow.slots[15].nbt.value.display.value.Name.value.includes("Manage Auctions")) || bot.currentWindow.slots[15].nbt.value.display.value.Name.value.includes("Create Auction")) {
+                if ((getWindowName(bot.currentWindow)?.includes("Co-op Auction House") || getWindowName(bot.currentWindow)?.includes("Auction House")) && (bot.currentWindow.slots[15].nbt.value.display.value.Name.value?.includes("Manage Auctions")) || bot.currentWindow.slots[15].nbt.value.display.value.Name.value?.includes("Create Auction")) {
                   bot.currentWindow.slots.every(async item => {
                     if (item == null) { return }
                     if (item.slot == 15) {
@@ -323,7 +323,7 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
     try {
       itemuuid = nbt.simplify(bot.currentWindow?.slots[13]?.nbt)?.ExtraAttributes?.uuid
     } catch (e) {
-      error(`§6[§bTPM§6] §cError getting item UUID, leaving listing`);
+      error(`[TPM] Error getting item UUID, leaving listing`);
       bot.state = null;
       if (bot.currentWindow) bot.closeWindow(bot.currentWindow);
       return;
@@ -376,6 +376,18 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
   debug("price " + priceToRelist)
   await once(bot, 'windowOpen');
   debug("did /ah")
+  if(!bot.currentWindow){
+    logmc("§6[§bTPM§6] §cWas not able to open AH to sell item, trying again");
+    await sleep(200);
+    bot.chat("/ah")
+    debug(`running /ah`)
+    await once(bot, 'windowOpen');
+    if(!bot.currentWindow){
+      logmc("§6[§bTPM§6] §cFailed again, aborting!!!");
+      bot.state = null;
+      lastAction = Date.now();
+    }
+  }
   bot.currentWindow.slots.every(async item => {
     if (item == null) { return }
     if (nbt.simplify(item?.nbt)?.ExtraAttributes?.uuid == itemuuid) {
@@ -397,7 +409,7 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
   }
   uuidFound = false;
   await once(bot, 'windowOpen');
-  if ((bot.currentWindow?.title?.includes("Create BIN Auction")) && bot.currentWindow.slots[33].nbt.value.display.value.Name.value?.includes("6 Hours")) {
+  if ((getWindowName(bot.currentWindow)?.includes("Create BIN Auction")) && bot.currentWindow.slots[33].nbt.value.display.value.Name.value?.includes("6 Hours")) {
     debug("Auction Duration Menu Opened")
     await sleep(200)
     bot.currentWindow.requiresConfirmation = false;
@@ -417,7 +429,7 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
     debug("Auction Duration set to 2 days")
   }
   await once(bot, 'windowOpen');
-  if ((bot.currentWindow?.title?.includes("Create BIN Auction")) && bot.currentWindow.slots[33].nbt.value.display.value.Name.value.includes("2 Days")) {
+  if ((getWindowName(bot.currentWindow)?.includes("Create BIN Auction")) && bot.currentWindow.slots[33].nbt.value.display.value.Name.value?.includes("2 Days")) {
     //console.log("a")
     bot.currentWindow.requiresConfirmation = false;
     bot.clickWindow(31, 0, 0)
@@ -468,7 +480,7 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
   debug(numWithCommas)
   await sleep(500)
   debug("Debug time:", getWindowName(bot.currentWindow), bot.currentWindow.slots[31].nbt.value.display.value.Name.value, bot.currentWindow.slots[33].nbt.value.display.value.Name.value)
-  if (bot.currentWindow?.title?.includes("Create BIN Auction") && bot.currentWindow.slots[31].nbt.value.display.value.Name.value.includes(`${numWithCommas} coins`) && bot.currentWindow.slots[33].nbt.value.display.value.Name.value.includes("2 Days")) {
+  if (getWindowName(bot.currentWindow)?.includes("Create BIN Auction") && bot.currentWindow.slots[31].nbt.value.display.value.Name.value?.includes(`${numWithCommas} coins`) && bot.currentWindow.slots[33].nbt.value.display.value.Name.value?.includes("2 Days")) {
     bot.currentWindow.requiresConfirmation = false;
     bot.clickWindow(29, 0, 0)
     debug("bid confirmed, finalizing auction listing")
@@ -480,7 +492,7 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
     bot.currentWindow.requiresConfirmation = false;
     bot.clickWindow(11, 0, 0)
     await once(bot, 'windowOpen');
-    if (bot.currentWindow.slots[29].type == 394 && (bot.currentWindow?.title?.includes("BIN Auction View"))) {
+    if (bot.currentWindow.slots[29]?.type == 394 && (getWindowName(bot.currentWindow)?.includes("BIN Auction View"))) {
       logmc("§6[§bTPM§6] §3Auction listed :D");
       bot.closeWindow(bot.currentWindow);
       bot.state = null;

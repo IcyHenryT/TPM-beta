@@ -53,9 +53,9 @@ const defaultConfig = `{
   //Only claim your auctions (angry coop prevention)
   "ownAuctions": false,
 
-  //Finders to not list 
+  //Finders to not list. Options: USER, CraftCost, TFM, AI, SNIPER, STONKS, FLIPPER
   "doNotListFinders": [
-    "user"
+    "USER"
   ]
 
 }`;
