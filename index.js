@@ -78,7 +78,7 @@ usInstance = config.usInstance;
 percentOfTarget = config.percentOfTarget;
 relist = config.relist;
 ownAuctions = config.ownAuctions;
-badFinders = config.doNotListFinders;
+badFinders = config.doNotListFinders ? config.doNotListFinders : ['user'];
 
 if (webhook) {
   webhook = new Webhook(webhook);
@@ -776,7 +776,7 @@ async function start() {
           lastPurchasedAhid = object.id
           lastPurchasedTarget = object.target
           lastPurchasedFinder = object.finder
-          if (!badFinders.includes(lastPurchasedFinder)) {
+          if (!badFinders?.includes(lastPurchasedFinder)) {
             purchasedFinders.push(lastPurchasedFinder);
             setTimeout(async () => {
               if (bot.state === null) {
@@ -880,6 +880,7 @@ async function start() {
           packets.sendMessage(message);
           break;
         case '/cofl':
+        case "/tpm":
         case '/icymacro':
           handleCommand(input);
           break;

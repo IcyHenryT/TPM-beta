@@ -51,7 +51,7 @@ const defaultConfig = `{
   "relist": false,
 
   //Only claim your auctions (angry coop prevention)
-  "ownAuctions": false
+  "ownAuctions": false,
 
   //Finders to not list 
   "doNotListFinders": [
