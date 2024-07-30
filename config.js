@@ -53,6 +53,11 @@ const defaultConfig = `{
   //Only claim your auctions (angry coop prevention)
   "ownAuctions": false
 
+  //Finders to not list 
+  "doNotListFinders": [
+    "user"
+  ]
+
 }`;
 
 if (!fs.existsSync('./config.json5')) {
@@ -67,4 +72,4 @@ function updateConfig(data) {//golden-fleece my savior idk how to spell that
 
 const config = JSON5.parse(fs.readFileSync('./config.json5', 'utf8'));
 
-module.exports = {config, updateConfig};
+module.exports = { config, updateConfig };

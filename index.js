@@ -23,7 +23,7 @@ let lastAction = Date.now();
 const { config, updateConfig } = require('./config.js');
 const nbt = require('prismarine-nbt');
 
-let ign, bedSpam, discordid, TOS, webhook, usInstance, clickDelay, delay, usingBaf, session, discordbot, waittime;
+let ign, bedSpam, discordid, TOS, webhook, usInstance, clickDelay, delay, usingBaf, session, discordbot, badFinders, waittime;
 
 function testign() {
   if (config.username.trim() === '') {
@@ -78,6 +78,7 @@ usInstance = config.usInstance;
 percentOfTarget = config.percentOfTarget;
 relist = config.relist;
 ownAuctions = config.ownAuctions;
+badFinders = config.doNotListFinders;
 
 if (webhook) {
   webhook = new Webhook(webhook);
@@ -100,6 +101,7 @@ let lastOpenedTargets = [];
 let lastOpenedFinders = [];
 let lastListedIds = [];
 let lastListedTargets = [];
+let relistObject = {};
 let ranit = false;
 let totalslots = 17;
 let currentlisted = 0;
@@ -309,16 +311,23 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
   bot.state = "listing"
   relistClaim = false;
   let itemuuid;
-  let idToRelist = purchasedAhids.shift();
-  let priceToRelist = purchasedPrices.shift();
+  let idToRelist = purchasedAhids;
+  let priceToRelist = purchasedPrices;
   //ChatLib.chat(`Starting relist process for item with id: ${idToRelist}`)
   debug("Starting relist process for item with ahid:", idToRelist, "and target:", priceToRelist, 'bot state:', bot.state);
   bot.chat(`/viewauction ${idToRelist}`);
   await once(bot, 'windowOpen');
-  if (getWindowName(bot.currentWindow).includes("BIN Auction View")) {
+  if (getWindowName(bot.currentWindow)?.includes("BIN Auction View")) {
     await sleep(500)
     debug("BIN Auction View opened")
-    itemuuid = nbt.simplify(bot.currentWindow?.slots[13]?.nbt)?.ExtraAttributes?.uuid
+    try {
+      itemuuid = nbt.simplify(bot.currentWindow?.slots[13]?.nbt)?.ExtraAttributes?.uuid
+    } catch (e) {
+      error(`§6[§bTPM§6] §cError getting item UUID, leaving listing`);
+      bot.state = null;
+      if (bot.currentWindow) bot.closeWindow(bot.currentWindow);
+      return;
+    }
     bot.currentWindow.requiresConfirmation = false;
     bot.clickWindow(31, 0, 0)
     debug("claim click")
@@ -388,12 +397,12 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
   }
   uuidFound = false;
   await once(bot, 'windowOpen');
-  if ((bot.currentWindow?.title?.includes("Create BIN Auction")) && bot.currentWindow.slots[33].nbt.value.display.value.Name.value.includes("6 Hours")) {
+  if ((bot.currentWindow?.title?.includes("Create BIN Auction")) && bot.currentWindow.slots[33].nbt.value.display.value.Name.value?.includes("6 Hours")) {
     debug("Auction Duration Menu Opened")
     await sleep(200)
     bot.currentWindow.requiresConfirmation = false;
     bot.clickWindow(33, 0, 0)
-  } else if (!getWindowName(bot.currentWindow)?.includes('Create BIN Auction')){
+  } else if (!getWindowName(bot.currentWindow)?.includes('Create BIN Auction')) {
     logmc("§6[§bTPM§6] §cItem probably already in slot, please remove it :) Aborting relist process for this item ):")
     if (bot.currentWindow) bot.closeWindow(bot.currentWindow);
     await sleep(250)
@@ -617,7 +626,7 @@ async function start() {
           bot.state = null;
         } else {
           await sleep(10000)
-          if (relistCheck(purchasedIds, currentlisted, totalslots, bot.state)) {
+          if (relistCheck(currentlisted, totalslots, bot.state)) {
             bot.state = "listing";
             await sleep(500);
             relistHandler(command.id, command.targets);
@@ -626,18 +635,12 @@ async function start() {
           }
         }
       } else {
-        let ahid = idQueue.shift();
-        let target = targetQueue.shift();
-        let finder = finderQueue.shift();
+        let ahid = webhookPricing[command].id
+        let target = webhookPricing[command].target
+        let finder = webhookPricing[command].finder
         bedFailed = true;
         currentOpen = ahid
         bot.chat(`/viewauction ${ahid}`);
-        lastOpenedTargets.length = 0;
-        lastOpenedTargets.push(target);
-        lastOpenedAhids.length = 0;
-        lastOpenedAhids.push(ahid);
-        lastOpenedFinders.length = 0;
-        lastOpenedFinders.push(finder);
       }
       stateManger.next();
       lastAction = Date.now();
@@ -766,45 +769,47 @@ async function start() {
       let lastPurchasedAhid;
       let lastPurchasedTarget;
       let lastPurchasedFinder;
+      const item = utils.noColorCodes(match1[1]).replace(/!|-us|\.|\b(?:[1-9]|[1-5][0-9]|6[0-4])x\b/g, "");
+      const object = relistObject[item]
       if (lastOpenedAhids.length > 0 && config.relist) {
-        if (!finderQueue.includes("user")) {
-          lastPurchasedAhid = lastOpenedAhids[lastOpenedAhids.length - 1];
-          purchasedIds.push(lastPurchasedAhid);
-          lastPurchasedTarget = lastOpenedTargets[lastOpenedTargets.length - 1];
-          purchasedTargets.push(lastPurchasedTarget);
-          lastPurchasedFinder = lastOpenedFinders[lastOpenedFinders.length - 1];
-          purchasedFinders.push(lastPurchasedFinder);
-          setTimeout(async () => {
-            if (bot.state === null) {
-              //bot.state = 'listing';
-              if (fullInv) {
-                logmc("§6[§bTPM§6] §cNot attempting to relist because your inventory is full. You will need to log in and clear your inventory to continue")
-                bot.state = null;
-              } else {
-                if (relistCheck(purchasedIds, currentlisted, totalslots, bot.state)) {
-                  bot.state = "listing";
-                  await sleep(500);
-                  relistHandler(purchasedIds, purchasedTargets);
-                } else {
-                  debug(`relist check didn't work`);
-                  stateManger.add({ id: purchasedIds, targets: purchasedTargets }, 4, 'listing');
+        if (object) {
+          lastPurchasedAhid = object.id
+          lastPurchasedTarget = object.target
+          lastPurchasedFinder = object.finder
+          if (!badFinders.includes(lastPurchasedFinder)) {
+            purchasedFinders.push(lastPurchasedFinder);
+            setTimeout(async () => {
+              if (bot.state === null) {
+                //bot.state = 'listing';
+                if (fullInv) {
+                  logmc("§6[§bTPM§6] §cNot attempting to relist because your inventory is full. You will need to log in and clear your inventory to continue")
                   bot.state = null;
+                } else {
+                  if (relistCheck(currentlisted, totalslots, bot.state)) {
+                    bot.state = "listing";
+                    await sleep(500);
+                    relistHandler(lastPurchasedAhid, lastPurchasedTarget);
+                  } else {
+                    debug(`relist check didn't work`);
+                    stateManger.add({ id: lastPurchasedAhid, targets: lastPurchasedTarget }, 4, 'listing');
+                    bot.state = null;
+                  }
                 }
+              } else {
+                debug(`bot state check didn't work`);
+                stateManger.add({ id: lastPurchasedAhid, targets: lastPurchasedTarget }, 4, 'listing');
+                bot.state = null;
               }
-            } else {
-              debug(`bot state check didn't work`);
-              stateManger.add({ id: purchasedIds, targets: purchasedTargets }, 4, 'listing');
-              bot.state = null;
-            }
-          }, 10000);
-        }
-        else if (lastPurchasedFinder.toString().toLowerCase().includes("user")) {
-          logmc('§6[§bTPM§6] §cUser finder flip found, not relisting')
-          // specialitems(lastPurchasedAhid[lastPurchasedAhid.length - 1])
+            }, 10000);
+          } else {
+            logmc(`§6[§bTPM§6] §cUser finder flip found, not relisting ${lastPurchasedFinder}`)
+            // specialitems(lastPurchasedAhid[lastPurchasedAhid.length - 1])
+          }
+        } else {
+          error(`Didn't find ${item} in ${JSON.stringify(relistObject)} Please report this to icyhenryt`);
         }
       }
       if (bot.state == 'buying') bot.state = null;
-      const item = utils.noColorCodes(match1[1]).replace(/!|-us|\.|\b(?:[1-9]|[1-5][0-9]|6[0-4])x\b/g, "");
       const price = match1[2];
       if (!webhookPricing[item]) {
         error(`Didn't find ${item} in ${JSON.stringify(webhookPricing)} Please report this to icyhenryt`);
@@ -953,16 +958,13 @@ async function start() {
     let auctionID;
     let currentTime = Date.now();
     if (usingBaf) {
-      idQueue.push(data.id);
-      targetQueue.push(data.target);
-      finderQueue.push(data.finder);
       if (!bot.state && currentTime - lastAction > delay) {
-        let auctionID = idQueue.shift();
-        let target = targetQueue.shift();
-        let finder = finderQueue.shift();
-        lastLeftBuying = Date.now();
+        lastLeftBuying = currentTime;
         bot.state = 'buying';
+        auctionID = data.id;
         packets.sendMessage(`/viewauction ${auctionID}`);
+        let target = data.target;
+        let finder = data.finder;
         itemName = data.itemName.replace(/!|-us|\.|\b(?:[1-9]|[1-5][0-9]|6[0-4])x\b/g, "");
         lastAction = currentTime;
         logmc(`§6[§bTPM§6] §8Opening ${itemName}`);
@@ -975,12 +977,20 @@ async function start() {
         lastOpenedAhids.push(auctionID);
         lastOpenedFinders.length = 0;
         lastOpenedFinders.push(finder);
+        relistObject[noColorCodes(itemName).replace(/!|-us|\.|\b(?:[1-9]|[1-5][0-9]|6[0-4])x\b/g, "")] = {
+          id: auctionID,
+          target: target,
+          finder: data.finder
+        };
       } else {
         auctionID = data.id;
         itemName = data.itemName.replace(/!|-us|\.|\b(?:[1-9]|[1-5][0-9]|6[0-4])x\b/g, "");
         logmc(`§6[§bTPM§6] §aAdding ${itemName}§3 to the pipeline because state is ${bot.state}!`);
-        stateManger.add(`/viewauction ${auctionID}`, 69, 'buying');
+        stateManger.add(noColorCodes(itemName).replace(/!|-us|\.|\b(?:[1-9]|[1-5][0-9]|6[0-4])x\b/g, ""), 69, 'buying');
       }
+      idQueue.push(data.id);
+      targetQueue.push(data.target);
+      finderQueue.push(data.finder);
       const ending = new Date(normalizeDate(data.purchaseAt)).getTime();
       webhookPricing[noColorCodes(itemName)] = {
         target: data.target,
@@ -1006,21 +1016,18 @@ async function start() {
           if (getWindowName(bot.currentWindow)?.includes('BIN Auction View') && currentOpen === auctionID) {
             bot.closeWindow(bot.currentWindow);
             bot.state = null;
-            logmc(`§6[§bTPM§6] §cBed timing failed and we had to abort the auction :(`);
+            logmc(`§6[§bTPM§6] §cBed timing failed and we had to abort the auction :( Please lower your waittime if this continues or turn on bedspam`);
           }
         }, 5000);
       }
     } else {
-      idQueue.push(data.id);
-      targetQueue.push(data.target);
-      finderQueue.push(data.finder);
       if (!bot.state && currentTime - lastAction > delay) {
-        let auctionID = idQueue.shift();
-        let target = targetQueue.shift();
-        let finder = finderQueue.shift();
+        auctionID = data.id;
         lastLeftBuying = Date.now();
         bot.state = 'buying';
         packets.sendMessage(`/viewauction ${auctionID}`);
+        let target = data.target;
+        let finder = data.finder;
         bedFaiiled = false;
         closedGui = false;
         itemName = data.auction.itemName;
@@ -1034,14 +1041,22 @@ async function start() {
         lastOpenedAhids.push(auctionID);
         lastOpenedFinders.length = 0;
         lastOpenedFinders.push(finder);
+        relistObject[noColorCodes(itemName).replace(/!|-us|\.|\b(?:[1-9]|[1-5][0-9]|6[0-4])x\b/g, "")] = {
+          id: auctionID,
+          target: target,
+          finder: finder
+        };
       } else {
         auctionID = data.id;
         itemName = data.auction.itemName;
         if (bot.state !== 'moving') {
           logmc(`§3Adding ${itemName}§3 to the pipeline because state is ${bot.state}!`);
-          stateManger.add(`/viewauction ${auctionID}`, 69, 'buying');
+          stateManger.add(noColorCodes(itemName).replace(/!|-us|\.|\b(?:[1-9]|[1-5][0-9]|6[0-4])x\b/g, ""), 69, 'buying');
         }
       }
+      idQueue.push(data.id);
+      targetQueue.push(data.target);
+      finderQueue.push(data.finder);
       const ending = new Date(normalizeDate(data.auction.start)).getTime() + 20000;
       webhookPricing[noColorCodes(itemName).replace(/!|-us|\.|\b(?:[1-9]|[1-5][0-9]|6[0-4])x\b/g, "")] = {
         target: data.target,
@@ -1081,6 +1096,7 @@ async function start() {
         }
       }, 50);
     }
+    debug(`Found flip ${itemName} uuid ${auctionID}`)
   });
   setInterval(() => {
     //BED SPAM
