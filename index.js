@@ -116,6 +116,7 @@ let lastLeftBuying;
 
 
 async function getReady() {
+  ranit = true;
   let getReady = new Promise(async (resolve, reject) => {
     await sleep(5000)
     bot.chat("/sbmenu")
@@ -301,7 +302,6 @@ async function getReady() {
   await getReady.then((message) => { debug(message) })
   await sleep(1000)
   logmc("§6[§bTPM§6] §3Finished getting slot data")
-  ranit = true;
   bot.state = null;
   startWS(session);
   lastAction = Date.now();
