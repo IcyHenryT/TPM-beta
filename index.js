@@ -376,13 +376,13 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
   debug("price " + priceToRelist)
   await once(bot, 'windowOpen');
   debug("did /ah")
-  if(!bot.currentWindow){
+  if (!bot.currentWindow) {
     logmc("§6[§bTPM§6] §cWas not able to open AH to sell item, trying again");
     await sleep(200);
     bot.chat("/ah")
     debug(`running /ah`)
     await once(bot, 'windowOpen');
-    if(!bot.currentWindow){
+    if (!bot.currentWindow) {
       logmc("§6[§bTPM§6] §cFailed again, aborting!!!");
       bot.state = null;
       lastAction = Date.now();
@@ -439,7 +439,7 @@ async function relistHandler(purchasedAhids, purchasedPrices) {
   //.log("bonkors",bot.currentWindow.title)
   debug("PRICEHERE " + priceToRelist)
   let listpriceomg = (priceToRelist)
-  let relistpercent = 0;
+  let relistpercent = 100;
   for (let i = 0; i < percentOfTarget.length; i += 3) {
     let lowerBound = percentOfTarget[i];
     let upperBound = percentOfTarget[i + 1];
@@ -633,7 +633,11 @@ async function start() {
         bot.state = 'claiming';
         await claimSold();
         bot.state = null;
-      } else if (command.id && currentlisted !== totalslots) {
+      } else if (command?.id) {
+        if(currentlisted == totalslots){
+          debug(`AH full, not listing from queue`);
+          return;
+        }
         if (fullInv) {
           logmc("§6[§bTPM§6] §cNot attempting to relist because your inventory is full. You will need to log in and clear your inventory to continue")
           bot.state = null;
@@ -649,9 +653,12 @@ async function start() {
         }
       } else {
         bot.state = current.state;
-        let ahid = webhookPricing[command].id
-        let target = webhookPricing[command].target
-        let finder = webhookPricing[command].finder
+        const ahhhhh = webhookPricing[command];
+        if (ahhhhh) {//crash :(
+          var ahid = ahhhhh.id
+        } else {
+          error(`Ahhh didn't find ${command} in ${JSON.stringify(webhookPricing)}`);
+        }
         bedFailed = true;
         currentOpen = ahid
         bot.chat(`/viewauction ${ahid}`);
@@ -862,6 +869,7 @@ async function start() {
       const buyer = match2[1];
       const item = match2[2];
       const price = utils.onlyNumbers(match2[3]);
+      currentlisted--
       //console.log("purse test BOUGHT", await getPurse(bot), "price", price);
       if (webhook) {
         const purse = utils.formatNumber(await getPurse(bot) + parseInt(String(price).replace(/,/g, ''), 10));
@@ -933,7 +941,7 @@ async function start() {
           if (name?.includes('Claim')) {
             bot.clickWindow(index, 0, 0);
             sleep(50);
-            currentlisted--;
+            //currentlisted--;
             if (fullInv) {
               logmc("§6[§bTPM§6] §cNot attempting to relist because your inventory is full. You will need to log in and clear your inventory to continue")
               bot.state = null;

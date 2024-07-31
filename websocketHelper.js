@@ -55,8 +55,8 @@ async function startWS(sid) {
     websocket.on('close', async () => {
         connected = false;
         logmc('§cDisconnected from WebSocket server');
-        await sleep(500);
-        startWS(sid);
+        await sleep(5000);
+        if(!connected) startWS(sid);
     });
 
     websocket.on('error', (err) => {
