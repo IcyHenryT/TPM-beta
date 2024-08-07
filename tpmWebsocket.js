@@ -2,7 +2,7 @@ const WebSocket = require('ws');
 const { config } = require('./config.js');
 const { formatNumber } = require('./utils.js')
 
-const ws = new WebSocket('ws://107.152.36.217:1241');//This is just a random VPS
+let ws = new WebSocket('ws://107.152.36.217:1241');//This is just a random VPS
 const uuid = config.uuid;
 const discordID = config.discordID
 const ign = config.username;
